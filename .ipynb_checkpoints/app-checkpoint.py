@@ -7,23 +7,15 @@ import time
 import urllib.robotparser
 import urllib.parse
 
-# Function definitions for the tasks
 def extract_information(url):
     page = requests.get(url)
     if page.status_code == 200:
         soup = BeautifulSoup(page.content, 'html.parser')
-        
-        # Extract headlines
         headlines = []
         for i in range(1, 7):
             headlines.extend([h.get_text() for h in soup.find_all(f'h{i}')])
-        
-        # Extract links
         links = [(link.get('href'), link.get_text()) for link in soup.find_all('a') if link.get('href')]
-        
-        # Extract images
         images = [(img.get('src'), img.get('alt')) for img in soup.find_all('img')]
-        
         return headlines, links, images
     else:
         st.error(f"Request failed with status code: {page.status_code}")
@@ -104,14 +96,17 @@ def follow_links(url, depth=1):
         return []
 
 def can_fetch(url, user_agent='*'):
-    parsed_url = urllib.parse.urlparse(url)
-    base_url = f"{parsed_url.scheme}://{parsed_url.netloc}/robots.txt"
-    rp = urllib.robotparser.RobotFileParser()
-    rp.set_url(base_url)
-    rp.read()
-    return rp.can_fetch(user_agent, url)
+    try:
+        parsed_url = urllib.parse.urlparse(url)
+        base_url = f"{parsed_url.scheme}://{parsed_url.netloc}/robots.txt"
+        rp = urllib.robotparser.RobotFileParser()
+        rp.set_url(base_url)
+        rp.read()
+        return rp.can_fetch(user_agent, url)
+    except Exception as e:
+        st.error(f"Error checking robots.txt: {e}")
+        return False
 
-# Streamlit app interface
 st.title("Web Scraping Utility")
 
 url = st.text_input("Enter URL:", "https://en.wikipedia.org/wiki/Main_Page")
